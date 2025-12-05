@@ -1,4 +1,4 @@
-# app.py
+
 # Live IDS dashboard (Streamlit) for your AI agents
 
 import time
@@ -14,7 +14,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, confusion_m
 from pathlib import Path
 import pandas as pd
 import streamlit as st
-# --- Simple topology/semantics mapping ---
+#  Cambridge ,london topology
 
 SERVICE_TO_ZONE = {
     # DMZ-facing
@@ -27,7 +27,7 @@ SERVICE_TO_ZONE = {
     # Corporate-ish
     "domain_u": "Corporate", "eco_i": "Corporate", "ftp_data": "Corporate",
 
-    # OT-ish (rare in NSL-KDD; we’ll bucket “other” here to demo variety)
+    # OT-ish (rare in NSL-KDD; 
     "other": "OT", "ntp_u": "OT"
 }
 
@@ -47,7 +47,7 @@ def map_dept(zone: str) -> str:
     return ZONE_TO_DEPT.get(zone, "Corporate")
 
 
-# ---------- Paths / constants ----------
+#  Paths/constants 
 ART = Path("artifacts")
 DATA = Path("data")
 COLS = [
@@ -97,7 +97,7 @@ def load_test():
         df_test["zone"] = "Corporate"
         df_test["dept"] = "Corporate"
 
-    # (optional) coarser readable class
+    # coarser readable class
     def coarse_class(lbl: str) -> str:
         if lbl == "normal": return "Normal"
         s = str(lbl).lower()
@@ -111,7 +111,7 @@ def load_test():
     return df_test, X_test, y_test
 
 
-# ---------- Agent data classes ----------
+
 # -------- Agent data classes --------
 from dataclasses import dataclass
 
@@ -179,7 +179,7 @@ class AnalysisAgent:
         return rows
 
 
-# -------- Manager agent --------
+
 # -------- Manager agent --------
 class ManagerAgent:
     def __init__(self, alert_threshold=0.9):
@@ -198,22 +198,22 @@ class ManagerAgent:
 
     @property
     def alerts(self):
-        # Return rows considered alerts based on threshold
+        # Return rows considered alerts based on the threshold
         df = self.df
         if df.empty:
             return df
         return df[df["prob"] >= self.alert_threshold].copy()
 
 
-# ---------- UI ----------
+# UI 
 st.set_page_config(page_title="AI Agent NIDS", page_icon="🛡️", layout="wide")
 st.title("🛡️ AI-Agent Network Intrusion Detection — Live Dashboard")
-# --- Interactive topology (Plotly) ---
+#  Interactive topology (Plotly) 
 import networkx as nx
 import plotly.graph_objects as go
 
 # Minimal topology definition (customize nodes/edges to match your real layout)
-# Node ids must match how you choose to map services -> nodes below
+
 TOPO_NODES = [
     ("Cambridge-Router", (0, 0)),
     ("Cambridge-SwitchA", (-0.8, -1.2)),
@@ -232,9 +232,7 @@ TOPO_EDGES = [
     ("Manchester-Router", "Manchester-SwitchA"),
 ]
 
-# A mapping from alert "service" (or zone/department) to a topology node id.
-# Customize these keys to match your dataset (service names or zones).
-# A mapping from alert "service" (or zone/department) to a topology node id.
+
 # Keys MUST be lowercased because we call str(svc).lower() when looking them up.
 SERVICE_TO_NODE = {
     # DMZ / corporate web services -> Cambridge switch A
@@ -353,10 +351,10 @@ def draw_topology(topo_counts: dict | None = None, recent_nodes: set | None = No
         showlegend=False,  # hides trace legend
     )
 
-    return fig   # <-- make sure this line is indented at same level as fig.update_layout
+    return fig   
 
 
-# draw current topology using manager alerts (if exist)
+# draws current topology using manager alerts
 alerts_df = (
     st.session_state.manager.alerts
     if "manager" in st.session_state else pd.DataFrame()
@@ -371,14 +369,14 @@ alerts_df = st.session_state.manager.alerts if "manager" in st.session_state els
 
 rf, ann = load_models()
 df_test, X_test, y_test = load_test()
-st.session_state.df_test = df_test  # so AnalysisAgent can look up service/label/attack_class
+st.session_state.df_test = df_test  # AnalysisAgent can look up service/label/attack_class
 
 with st.sidebar:
     st.header("⚙️ Controls")
     model_choice = st.selectbox("Model", ["Random Forest", "ANN (MLP)"])
     use_model = rf if model_choice == "Random Forest" else ann
 
-    # helpful defaults: RF ~0.10 best F1; ANN ~0.10 (from your sweep)
+    # helpful defaults: RF ~0.10 best F1; ANN ~0.10 
     decision_th = st.slider("Decision threshold (attack)", 0.01, 0.99, 0.10, 0.01)
     alert_th    = st.slider("Alert threshold (display)", 0.50, 0.99, 0.90, 0.01)
     batch_size  = st.slider("Batch size (packets/tick)", 50, 1000, 300, 50)
@@ -418,7 +416,7 @@ else:
             hist["prob"] >= float(decision_th)
         ).astype(int)
 
-# tiny safety guard in case Streamlit reruns mid-initialize
+# safety guard in case Streamlit shows error
 if "capture" not in st.session_state:
     st.stop()
     
@@ -441,7 +439,7 @@ with c3:
     st.metric("Alerts so far", len(st.session_state.manager.alerts))
 
 
-# --- Live chart + tables containers (keep these above the function) ---
+# --- Live chart + tables containers
 chart_area = st.empty()
 alert_area = st.empty()
 table_area = st.empty()
@@ -533,7 +531,7 @@ if (not alert_df.empty) and ("attack_class" in alert_df.columns):
 else:
     alert_area.info("No alert-class data yet (no alerts or 'attack_class' missing).")
 
-# C) Download + optional auto-save  (ONE copy only)
+# C) Download + optional auto-save
 st.download_button(
     label="Download alerts as CSV",
     data=alert_df.to_csv(index=False).encode("utf-8"),
@@ -548,7 +546,7 @@ if save_alerts and not alert_df.empty:
     out = ART / "alerts_live.csv"
     alert_df.to_csv(out, index=False)
 
-# D) Top services among alerts (guarded)
+# D) Top services among alerts
 if not alert_df.empty:
     idx = alert_df["index"].astype(int).clip(0, len(df_test) - 1).values
     svc = df_test.loc[idx, ["service", "protocol_type"]].copy()
@@ -563,7 +561,7 @@ if not alert_df.empty:
     st.subheader("Top services among alerts")
     st.bar_chart(top.set_index("service"))
 
-# E) Recent packets table (always safe)
+# E) Recent packets table 
 table_area.subheader("Recent Packets (last 300)")
 hist = st.session_state.history if "history" in st.session_state else pd.DataFrame()
 if not hist.empty:
@@ -580,9 +578,9 @@ if start_btn or auto_run:
             st.experimental_rerun()
     else:
         step_once()
-# ==========================
-# 🔍 FEATURE IMPORTANCE VIEW
-# ==========================
+
+ # FEATURE IMPORTANCE VIEW
+ 
 
 ART = Path("artifacts")
 
